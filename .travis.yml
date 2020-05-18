@@ -11,6 +11,10 @@ script:
 
 jobs:
   include:
+    - name: "C++ Test"
+      language: cpp
+      compiler: gcc
+      script: ./cpptest.sh
     - name: "Python 3.8 on Xenial Linux"
       language: python
       python: 3.8
