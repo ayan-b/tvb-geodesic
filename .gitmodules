@@ -1,0 +1,3 @@
+[submodule "geodesic_library/googletest"]
+	path = geodesic_library/googletest
+	url = https://github.com/google/googletest.git
