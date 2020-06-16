@@ -43,7 +43,6 @@ double* compute_gdist_impl(
     for (int i = 0; i < (int)stop_points.size(); ++i) {
         algorithm.best_source(stop_points[i], distance[i]);
     }
-    std::cout << "I am>" << distance[0] << "\n";
     return distance;
 }
 

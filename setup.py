@@ -44,21 +44,8 @@ import os
 import numpy
 import shutil
 import setuptools
-from Cython.Distutils import build_ext
 
 GEODESIC_NAME = "gdist"
-
-GEODESIC_MODULE = [
-    setuptools.Extension(
-        name=GEODESIC_NAME,  # Name of extension
-        sources=["gdist.pyx"],  # Filename of Cython source
-        language="c++",  # Cython create C++ source
-        # Disable assertions; one is failing geodesic_mesh.h:405
-        define_macros=[('NDEBUG', 1)],
-        extra_compile_args=['--std=c++14'],
-        extra_link_args=['--std=c++14'],
-    )
-]
 
 INCLUDE_DIRS = [
     numpy.get_include(),  # NumPy dtypes
@@ -67,7 +54,7 @@ INCLUDE_DIRS = [
 
 TEAM = "Danil Kirsanov, Gaurav Malhotra and Stuart Knock"
 
-INSTALL_REQUIREMENTS = ['numpy', 'scipy', 'cython']
+INSTALL_REQUIREMENTS = ['numpy', 'scipy']
 
 with open(os.path.join(os.path.dirname(__file__), 'README.rst')) as fd:
     DESCRIPTION = fd.read()
@@ -75,9 +62,9 @@ with open(os.path.join(os.path.dirname(__file__), 'README.rst')) as fd:
 setuptools.setup(
     name="tvb-" + GEODESIC_NAME,
     version='2.0.2',
-    ext_modules=GEODESIC_MODULE,
+    scripts=['gdist.py'],
+    ext_modules=[setuptools.Extension('gdist_c_api', ['gdist_c_api.cpp'])],
     include_dirs=INCLUDE_DIRS,
-    cmdclass={'build_ext': build_ext},
     install_requires=INSTALL_REQUIREMENTS,
     description="Compute geodesic distances",
     long_description=DESCRIPTION,
@@ -88,7 +75,6 @@ setuptools.setup(
     keywords="gdist geodesic distance geo tvb"
 )
 
-shutil.rmtree('tvb_gdist.egg-info', True)
-if os.path.exists(GEODESIC_NAME + '.cpp'):
-    os.remove(GEODESIC_NAME + '.cpp')
-shutil.rmtree('build', True)
+# shutil.rmtree('tvb_gdist.egg-info', True)
+# if os.path.exists(GEODESIC_NAME + '.cpp'):
+#     os.remove(GEODESIC_NAME + '.cpp')

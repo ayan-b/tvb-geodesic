@@ -1,29 +1,27 @@
-import ctypes
+from ctypes import POINTER, CDLL, c_int, c_uint, c_double
+import glob
 
 import numpy as np
 import scipy
 
-lib = ctypes.CDLL('./gdist_c_api.so')
+libfile = glob.glob('build/*/gdist_c_api*.so')[0]
 
-
-c_double_p = ctypes.POINTER(ctypes.c_double)
-c_int_p = ctypes.POINTER(ctypes.c_int)
-c_uint_p = ctypes.POINTER(ctypes.c_uint)
+lib = CDLL(libfile)
 
 class Gdist(object):
     def __init__(self):
         lib.compute_gdist.argtypes = [
-            ctypes.c_uint,
-            ctypes.c_uint,
-            c_double_p,
-            c_int_p,
-            ctypes.c_uint,
-            ctypes.c_uint,
-            c_uint_p,
-            c_uint_p,
-            ctypes.c_double,
+            c_uint,
+            c_uint,
+            np.ctypeslib.ndpointer(dtype=np.float64),
+            np.ctypeslib.ndpointer(dtype=np.int32),
+            c_uint,
+            c_uint,
+            np.ctypeslib.ndpointer(dtype=np.int32),
+            np.ctypeslib.ndpointer(dtype=np.int32),
+            c_double,
         ]
-        lib.compute_gdist.restype = c_double_p
+        lib.compute_gdist.restype = POINTER(c_double)
 
     def compute_gdist(
         self,
@@ -53,43 +51,25 @@ class Gdist(object):
 def compute_gdist(
     vertices,
     triangles,
-    source_indices = None,
-    target_indices = None,
-    max_distance = 1**100,
+    source_indices=None,
+    target_indices=None,
+    max_distance=10**100,
 ):
     vertices = vertices.ravel()
     triangles = triangles.ravel()
     source_indices = source_indices.ravel()
     target_indices = target_indices.ravel()
-    vertices_size = vertices.size
-    triangles_size = triangles.size
-    source_indices_size = source_indices.size
-    target_indices_size = target_indices.size
-    vertices_p = vertices.ctypes.data_as(c_double_p)
-    triangles_p = triangles.ctypes.data_as(c_int_p)
-    source_indices_p = source_indices.ctypes.data_as(c_uint_p)
-    target_indices_p = target_indices.ctypes.data_as(c_uint_p)
 
     g = Gdist()
-    return g.compute_gdist(
-        number_of_vertices=vertices_size,
-        number_of_triangles=triangles_size,
-        vertices=vertices_p,
-        triangles=triangles_p,
-        number_of_source_indices=source_indices_size,
-        number_of_target_indices=target_indices_size,
-        source_indices_array=source_indices_p,
-        target_indices_array=target_indices_p,
+    distance = g.compute_gdist(
+        number_of_vertices=vertices.size,
+        number_of_triangles=triangles.size,
+        vertices=vertices,
+        triangles=triangles,
+        number_of_source_indices=source_indices.size,
+        number_of_target_indices=target_indices.size,
+        source_indices_array=source_indices,
+        target_indices_array=target_indices,
         distance_limit=max_distance
     )
-
-
-if __name__ == "__main__":
-    temp = np.loadtxt("../data/flat_triangular_mesh.txt", skiprows=1)
-    vertices = temp[0:121].astype(np.float64)
-    triangles = temp[121:321].astype(np.int32)
-    src = np.array([1], dtype=np.int32)
-    trg = np.array([2], dtype=np.int32)
-    distance = compute_gdist(vertices, triangles, source_indices = src, target_indices = trg)
-    distance = np.array(np.fromiter(distance, dtype=np.float64, count=trg.size))
-    np.testing.assert_array_almost_equal(distance, [0.2])
+    return np.fromiter(distance, dtype=np.float64, count=target_indices.size)
