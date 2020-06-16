@@ -47,6 +47,15 @@ import setuptools
 
 GEODESIC_NAME = "gdist"
 
+GEODESIC_MODULE = [
+    setuptools.Extension(
+        name=GEODESIC_NAME,  # Name of extension
+        language="c++",  # Cython create C++ source
+        extra_compile_args=['--std=c++14'],
+        extra_link_args=['--std=c++14'],
+    )
+]
+
 INCLUDE_DIRS = [
     numpy.get_include(),  # NumPy dtypes
     "geodesic_library",  # geodesic distance, C++ library.

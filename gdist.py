@@ -8,6 +8,7 @@ libfile = glob.glob('build/*/gdist_c_api*.so')[0]
 
 lib = CDLL(libfile)
 
+
 class Gdist(object):
     def __init__(self):
         lib.compute_gdist.argtypes = [
