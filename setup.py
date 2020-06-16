@@ -50,6 +50,7 @@ GEODESIC_NAME = "gdist"
 GEODESIC_MODULE = [
     setuptools.Extension(
         name=GEODESIC_NAME,  # Name of extension
+        sources=["gdist_c_api.cpp"],
         language="c++",  # Cython create C++ source
         extra_compile_args=['--std=c++14'],
         extra_link_args=['--std=c++14'],
@@ -72,7 +73,7 @@ setuptools.setup(
     name="tvb-" + GEODESIC_NAME,
     version='2.0.2',
     scripts=['gdist.py'],
-    ext_modules=[setuptools.Extension('gdist_c_api', ['gdist_c_api.cpp'])],
+    ext_modules=GEODESIC_MODULE,
     include_dirs=INCLUDE_DIRS,
     install_requires=INSTALL_REQUIREMENTS,
     description="Compute geodesic distances",
@@ -83,7 +84,3 @@ setuptools.setup(
     url='https://github.com/the-virtual-brain/tvb-gdist',
     keywords="gdist geodesic distance geo tvb"
 )
-
-# shutil.rmtree('tvb_gdist.egg-info', True)
-# if os.path.exists(GEODESIC_NAME + '.cpp'):
-#     os.remove(GEODESIC_NAME + '.cpp')

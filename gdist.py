@@ -4,7 +4,7 @@ import glob
 import numpy as np
 import scipy
 
-libfile = glob.glob('build/*/gdist_c_api*.so')[0]
+libfile = glob.glob('build/*/gdist*.so')[0]
 
 lib = CDLL(libfile)
 
