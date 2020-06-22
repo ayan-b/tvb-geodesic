@@ -104,6 +104,7 @@ def compute_gdist(
     target_indices=None,
     max_distance=1e100,
 ):
+    print("I am here")
     vertices = vertices.ravel()
     triangles = triangles.ravel()
     source_indices = source_indices.ravel()
