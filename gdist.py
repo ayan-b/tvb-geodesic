@@ -2,10 +2,13 @@ import ctypes
 import glob
 import os
 import sys
+import site
 
 import numpy as np
 import scipy.sparse
 
+
+PATH = os.path.dirname(__file__)
 
 if sys.platform == 'win32':
     libfile = glob.glob('build/*/gdist_c_api.dll')[0]
@@ -13,12 +16,15 @@ if sys.platform == 'win32':
     lib = ctypes.windll.LoadLibrary(libfile)
 elif sys.platform == 'darwin':
     try:
-        libfile = glob.glob('build/*/gdist*.so')[0]
+        file_location = os.path.join(PATH, "gdist.so")
+        libfile = glob.glob(file_location)[0]
     except IndexError:
-        libfile = glob.glob('build/*/gdist*.dylib')[0]
+        file_location = os.path.join(PATH, "gdist.dylib")
+        libfile = glob.glob(file_location)[0]
     lib = ctypes.cdll.LoadLibrary(libfile)
 else:
-    libfile = glob.glob('build/*/gdist*.so')[0]
+    file_location = os.path.join(PATH, "gdist.so")
+    libfile = glob.glob(file_location)[0]
     lib = ctypes.cdll.LoadLibrary(libfile)
 
 lib.compute_gdist.argtypes = [

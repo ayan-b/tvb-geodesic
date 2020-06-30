@@ -43,21 +43,13 @@ To build::
 import os
 import sys
 import setuptools
+from setuptools import setup, Extension
+from distutils.command.build_ext import build_ext
+
 
 GEODESIC_NAME = "gdist"
 
 GEODESIC_MODULE = []
-
-if sys.platform == 'darwin' or sys.platform == 'linux':
-    GEODESIC_MODULE = [
-        setuptools.Extension(
-            name=GEODESIC_NAME,  # Name of extension
-            sources=["gdist_c_api.cpp"],
-            language="c++",
-            extra_compile_args=['--std=c++11'],
-            extra_link_args=['--std=c++11'],
-        )
-    ]
 
 INCLUDE_DIRS = [
     "geodesic_library",  # geodesic distance, C++ library.
@@ -70,18 +62,56 @@ INSTALL_REQUIREMENTS = ['numpy', 'scipy']
 with open(os.path.join(os.path.dirname(__file__), 'README.rst')) as fd:
     DESCRIPTION = fd.read()
 
+# https://stackoverflow.com/questions/4529555/building-a-ctypes-based-c-library-with-distutils
+class build_ext(build_ext):
+
+    def build_extension(self, ext):
+        self._ctypes = isinstance(ext, CTypes)
+        return super().build_extension(ext)
+
+    def get_export_symbols(self, ext):
+        if self._ctypes:
+            return ext.export_symbols
+        return super().get_export_symbols(ext)
+
+    def get_ext_filename(self, ext_name):
+        # if self._ctypes:
+        #     return ext_name + '.so'
+        return super().get_ext_filename(ext_name)
+
+
+class CTypes(Extension):
+    pass
+
+GCC_COMPILE_ARGS = ['--std=c++11', 'fPIC']
+MSVC_COMPILE_ARGS = ['/LD', '/DNDEBUG', '/DDLL_EXPORTS']
+
+COMPILE_ARGS = MSVC_COMPILE_ARGS if sys.platform == 'win32' else GCC_COMPILE_ARGS
+
+GEODESIC_MODULE = CTypes(
+    name=GEODESIC_NAME,  # Name of extension
+    sources=['gdist_c_api.cpp'],
+    language='c++',
+    extra_compile_args=COMPILE_ARGS,
+    include_dirs=['geodesic_library'],
+)
+
+
 setuptools.setup(
     name="tvb-" + GEODESIC_NAME,
     version='2.0.2',
     scripts=['gdist.py'],
     py_modules=['gdist'],
-    ext_modules=GEODESIC_MODULE,
+    ext_modules=[GEODESIC_MODULE],
+    cmdclass={'build_ext': build_ext},
     include_dirs=INCLUDE_DIRS,
     install_requires=INSTALL_REQUIREMENTS,
+    test_requires=['pytest', 'pytest-cov'],
     description="Compute geodesic distances",
     long_description=DESCRIPTION,
     license='GPL v3',
     author=TEAM,
+    platforms='any',
     author_email='tvb.admin@thevirtualbrain.org',
     url='https://github.com/the-virtual-brain/tvb-gdist',
     keywords="gdist geodesic distance geo tvb"
