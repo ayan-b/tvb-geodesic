@@ -1,46 +1,6 @@
 #include "gdist_c_api.h"
 
 
-void compute_gdist_impl(
-    unsigned number_of_vertices,
-    unsigned number_of_triangles,
-    double *vertices,
-    unsigned *triangles,
-    unsigned number_of_source_indices,
-    unsigned number_of_target_indices,
-    unsigned *source_indices_array,
-    unsigned *target_indices_array,
-    double *distance,
-    double distance_limit
-) {
-
-    std::vector<double> points (vertices, vertices + number_of_vertices);
-    std::vector<unsigned> faces (triangles, triangles + number_of_triangles);
-    std::vector<unsigned> source_indices (source_indices_array, source_indices_array + number_of_source_indices);
-    std::vector<unsigned> target_indices (target_indices_array, target_indices_array + number_of_target_indices);
-
-    geodesic::Mesh mesh;
-    mesh.initialize_mesh_data(points, faces); // create internal mesh data structure including edges
-
-    geodesic::GeodesicAlgorithmExact algorithm(&mesh); // create exact algorithm for the mesh
-    
-    std::vector<geodesic::SurfacePoint> all_sources, stop_points;
-
-    for (unsigned i = 0; i < number_of_source_indices; ++i) {
-        all_sources.push_back(geodesic::SurfacePoint(&mesh.vertices()[source_indices[i]]));
-    }
-
-    for (unsigned i = 0; i < number_of_target_indices; ++i) {
-        stop_points.push_back(geodesic::SurfacePoint(&mesh.vertices()[target_indices[i]]));
-    }
-
-    algorithm.propagate(all_sources, distance_limit, &stop_points);
-
-    for (unsigned i = 0; i < stop_points.size(); ++i) {
-        algorithm.best_source(stop_points[i], distance[i]);
-    }
-}
-
 double* local_gdist_matrix_impl(
     unsigned number_of_vertices,
     unsigned number_of_triangles,
@@ -98,32 +58,6 @@ void free_memory_impl(double *ptr) {
 
 
 extern "C" {
-    void compute_gdist(
-        unsigned number_of_vertices,
-        unsigned number_of_triangles,
-        double *vertices,
-        unsigned *triangles,
-        unsigned number_of_source_indices,
-        unsigned number_of_target_indices,
-        unsigned *source_indices_array,
-        unsigned *target_indices_array,
-        double *distance,
-        double distance_limit
-    ) {
-        compute_gdist_impl(
-            number_of_vertices,
-            number_of_triangles,
-            vertices,
-            triangles,
-            number_of_source_indices,
-            number_of_target_indices,
-            source_indices_array,
-            target_indices_array,
-            distance,
-            distance_limit
-        );
-    }
-
     double* local_gdist_matrix(
         unsigned number_of_vertices,
         unsigned number_of_triangles,
