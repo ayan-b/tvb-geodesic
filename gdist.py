@@ -21,8 +21,10 @@ else:
 lib.local_gdist_matrix.argtypes = [
     ctypes.c_uint,
     ctypes.c_uint,
-    np.ctypeslib.ndpointer(dtype=np.float64),
-    np.ctypeslib.ndpointer(dtype=np.uint32),
+    # np.ctypeslib.ndpointer(dtype=np.float64),
+    # np.ctypeslib.ndpointer(dtype=np.uint32),
+    ctypes.POINTER(ctypes.c_double),
+    ctypes.POINTER(ctypes.c_uint32),
     ctypes.POINTER(ctypes.c_uint),
     ctypes.c_double,
 ]
@@ -45,8 +47,8 @@ def local_gdist_matrix(
     data = lib.local_gdist_matrix(
         vertices.size,
         triangles.size,
-        vertices,
-        triangles,
+        vertices.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
+        triangles.ctypes.data_as(ctypes.POINTER(ctypes.c_uint32)),
         ctypes.byref(sparse_matrix_size),
         max_distance,
     )
