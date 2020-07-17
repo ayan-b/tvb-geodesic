@@ -41,9 +41,11 @@ To build::
 """
 
 import os
-import numpy
+import sys
 import shutil
 import setuptools
+
+import numpy
 from Cython.Distutils import build_ext
 
 GEODESIC_NAME = "gdist"
@@ -54,9 +56,15 @@ GEODESIC_MODULE = [
         sources=["gdist.pyx"],  # Filename of Cython source
         language="c++",  # Cython create C++ source
         # Disable assertions; one is failing geodesic_mesh.h:405
-        define_macros=[('NDEBUG', 1)],
-        extra_compile_args=['--std=c++14'],
-        extra_link_args=['--std=c++14'],
+        # define_macros=[('NDEBUG', 1)],
+        extra_compile_args=[
+            '--std=c++14',
+            '-fopenmp' if sys.platform != 'win32' else '/openmp',
+        ],
+        extra_link_args=[
+            '--std=c++14',
+            '-fopenmp' if sys.platform != 'win32' else '/openmp',
+        ],
         include_dirs=[numpy.get_include(), "geodesic_library"],
     )
 ]

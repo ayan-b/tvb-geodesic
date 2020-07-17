@@ -59,32 +59,35 @@ import scipy.sparse
 from libcpp cimport bool
 from libcpp.vector cimport vector
 
+import cython
+from cython.parallel import prange
+
 ################################################################################
 ############ Defininitions to access the C++ geodesic distance library #########
 ################################################################################
 cdef extern from "geodesic_mesh_elements.h" namespace "geodesic":
     cdef cppclass Vertex:
-        Vertex()
+        Vertex() nogil
 
 cdef extern from "geodesic_mesh_elements.h" namespace "geodesic":
     cdef cppclass SurfacePoint:
-        SurfacePoint()
-        SurfacePoint(Vertex*)
+        SurfacePoint() nogil
+        SurfacePoint(Vertex*) nogil
         double& x()
         double& y()
         double& z()
 
 cdef extern from "geodesic_mesh.h" namespace "geodesic":
     cdef cppclass Mesh:
-        Mesh()
+        Mesh() nogil
         void initialize_mesh_data(vector[double]&, vector[unsigned]&, bool)
-        vector[Vertex]& vertices()
+        vector[Vertex]& vertices() nogil
 
 cdef extern from "geodesic_algorithm_exact.h" namespace "geodesic":
     cdef cppclass GeodesicAlgorithmExact:
-        GeodesicAlgorithmExact(Mesh*)
-        void propagate(vector[SurfacePoint]&, double, vector[SurfacePoint]*)
-        unsigned best_source(SurfacePoint&, double&)
+        GeodesicAlgorithmExact(Mesh*) nogil
+        void propagate(vector[SurfacePoint]&, double, vector[SurfacePoint]*) nogil
+        unsigned best_source(SurfacePoint&, double&) nogil
 
 cdef extern from "geodesic_constants_and_simple_functions.h" namespace "geodesic":
     double GEODESIC_INF
@@ -205,6 +208,8 @@ def compute_gdist(numpy.ndarray[numpy.float64_t, ndim=2] vertices,
     return distances
 
 
+@cython.boundscheck(False)
+@cython.wraparound(False)
 def local_gdist_matrix(numpy.ndarray[numpy.float64_t, ndim=2] vertices,
                        numpy.ndarray[numpy.int32_t, ndim=2] triangles,
                        double max_distance = GEODESIC_INF,
@@ -263,15 +268,15 @@ def local_gdist_matrix(numpy.ndarray[numpy.float64_t, ndim=2] vertices,
     for k in range(N):
         targets.push_back(SurfacePoint(&amesh.vertices()[k]))
 
-    rows = []
-    columns = []
-    data = []
-    for k in range(N):
+    cdef vector[unsigned int] rows
+    cdef vector[unsigned int] columns
+    cdef vector[double] data
+    for k in prange(N, nogil=True, num_threads=1):
         source.push_back(SurfacePoint(&amesh.vertices()[k]))
         algorithm.propagate(source, max_distance, NULL)
         source.pop_back()
         
-        for kk in range(N): #TODO: Reduce to vertices reached during propagate.
+        for kk in prange(N, num_threads=2): #TODO: Reduce to vertices reached during propagate.
             algorithm.best_source(targets[kk], distance)
             
             if (
@@ -279,8 +284,8 @@ def local_gdist_matrix(numpy.ndarray[numpy.float64_t, ndim=2] vertices,
                 and distance is not 0
                 and distance <= max_distance
             ):
-                rows.append(k)
-                columns.append(kk)
-                data.append(distance)
+                rows.push_back(k)
+                columns.push_back(kk)
+                data.push_back(distance)
     
     return scipy.sparse.csc_matrix((data, (rows, columns)), shape=(N, N))
