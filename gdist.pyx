@@ -60,7 +60,7 @@ from libcpp cimport bool
 from libcpp.vector cimport vector
 
 import cython
-from cython.parallel import prange
+from cython.parallel cimport prange
 
 ################################################################################
 ############ Defininitions to access the C++ geodesic distance library #########
@@ -87,6 +87,7 @@ cdef extern from "geodesic_algorithm_exact.h" namespace "geodesic":
     cdef cppclass GeodesicAlgorithmExact:
         GeodesicAlgorithmExact(Mesh*) nogil
         void propagate(vector[SurfacePoint]&, double, vector[SurfacePoint]*) nogil
+        void propagate_from_single(SurfacePoint&, double, vector[SurfacePoint]*) nogil
         unsigned best_source(SurfacePoint&, double&) nogil
 
 cdef extern from "geodesic_constants_and_simple_functions.h" namespace "geodesic":
@@ -258,7 +259,8 @@ def local_gdist_matrix(numpy.ndarray[numpy.float64_t, ndim=2] vertices,
     # Define and create object for exact algorithm on that mesh:
     cdef GeodesicAlgorithmExact *algorithm = new GeodesicAlgorithmExact(&amesh)
     
-    cdef vector[SurfacePoint] source, targets
+    cdef vector[SurfacePoint] targets
+    cdef SurfacePoint source
     cdef Py_ssize_t N = vertices.shape[0]
     cdef Py_ssize_t k
     cdef Py_ssize_t kk
@@ -271,12 +273,11 @@ def local_gdist_matrix(numpy.ndarray[numpy.float64_t, ndim=2] vertices,
     cdef vector[unsigned int] rows
     cdef vector[unsigned int] columns
     cdef vector[double] data
-    for k in prange(N, nogil=True, num_threads=1):
-        source.push_back(SurfacePoint(&amesh.vertices()[k]))
-        algorithm.propagate(source, max_distance, NULL)
-        source.pop_back()
+    for k in prange(N, nogil=True, num_threads=2, schedule='static', chunksize=1):
+        source = SurfacePoint(&amesh.vertices()[k])
+        algorithm.propagate_from_single(source, max_distance, NULL)
         
-        for kk in prange(N, num_threads=2): #TODO: Reduce to vertices reached during propagate.
+        for kk in range(N): #TODO: Reduce to vertices reached during propagate.
             algorithm.best_source(targets[kk], distance)
             
             if (

@@ -7,6 +7,7 @@
 */
 #include <iostream>
 #include <fstream>
+#include <omp.h>
 
 #include "geodesic_algorithm_exact.h"
 
@@ -69,16 +70,23 @@ int main(int argc, char **argv)
     }
     else    //target vertex is not specified, print distances to all vertices
     {
-        algorithm.propagate(all_sources);    //cover the whole mesh
+        // std::vector<geodesic::SurfacePoint> targets;
+        // for (int i = 0; i < (int)points.size(); ++i) {
+        //     targets.push_back(&mesh.vertices()[i]);
+        // }
+        for (unsigned j = 0; j < mesh.vertices().size(); ++j) {
+            geodesic::SurfacePoint source(&mesh.vertices()[j]);
+            algorithm.propagate_from_single(source, geodesic::GEODESIC_INF, NULL);    //cover the whole mesh
+            #pragma omp parallel for
+            for(unsigned i=0; i<mesh.vertices().size(); ++i)
+            {
+                geodesic::SurfacePoint p(&mesh.vertices()[i]);
 
-        for(unsigned i=0; i<mesh.vertices().size(); ++i)
-        {
-            geodesic::SurfacePoint p(&mesh.vertices()[i]);
+                double distance;
+                unsigned best_source = algorithm.best_source(p,distance);    //for a given surface point, find closest source and distance to this source
 
-            double distance;
-            unsigned best_source = algorithm.best_source(p,distance);    //for a given surface point, find closest source and distance to this source
-
-            std::cout << distance << " ";    //print geodesic distance for every vertex
+                // std::cout << distance << " ";    //print geodesic distance for every vertex
+            }
         }
         std::cout << std::endl;
     }

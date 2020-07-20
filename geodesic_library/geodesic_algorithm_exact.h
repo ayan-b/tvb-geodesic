@@ -36,6 +36,10 @@ public:
                    double max_propagation_distance = GEODESIC_INF,    //propagation algorithm stops after reaching the certain distance from the source
                    std::vector<SurfacePoint>* stop_points = NULL);    //or after ensuring that all the stop_points are covered
 
+    void propagate_from_single(SurfacePoint& source,
+                   double max_propagation_distance = GEODESIC_INF,
+                   std::vector<SurfacePoint>* stop_points = NULL);
+
     void trace_back(SurfacePoint& destination,    //trace back piecewise-linear path
                     std::vector<SurfacePoint>& path);
 
@@ -526,6 +530,14 @@ inline void GeodesicAlgorithmExact::initialize_propagation_data()
             update_list_and_queue(interval_list(e), &candidate, 1);
         }
     }
+}
+
+inline void GeodesicAlgorithmExact::propagate_from_single(SurfacePoint& source,
+                                              double max_propagation_distance,
+                                              std::vector<SurfacePoint>* stop_points)
+{
+    std::vector<SurfacePoint> sources = {source};
+    propagate(sources, max_propagation_distance, stop_points);
 }
 
 
